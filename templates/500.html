@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Error 500{% endblock %}
+
+{% block content %}
+<div class="error-page-container">
+  <div class="error-code" style="color: var(--danger);">500</div>
+  <h1 class="error-title">Something went wrong</h1>
+  <p class="error-text">
+    An unexpected server error occurred. Please try again or return to the dashboard.
+  </p>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+    <i class="fa-solid fa-house"></i> Back to Dashboard
+  </a>
+</div>
+{% endblock %}

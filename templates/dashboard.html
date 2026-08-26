@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div class="page-hero">
+  <div class="page-hero-text">
+    <h1>Good morning, {{ user_name }}</h1>
+    <p>Here's an overview of your job search pipeline, scheduled interviews, and action items.</p>
+  </div>
+  <div class="page-hero-actions">
+    <a href="{{ url_for('find_jobs') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-magnifying-glass-location"></i> Find Jobs
+    </a>
+    <a href="{{ url_for('add_application') }}" class="btn btn-primary">
+      <i class="fa-solid fa-plus"></i> Add Application
+    </a>
+  </div>
+</div>
+
+<!-- 4 Statistics Cards -->
+<div class="stats-grid">
+  <!-- Card 1: Total Applications -->
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-label">Total Applications</span>
+      <div class="stat-icon-wrapper stat-icon-total">
+        <i class="fa-solid fa-folder-open"></i>
+      </div>
+    </div>
+    <div class="stat-value">{{ total_applications }}</div>
+    <div class="stat-subtext">
+      <span>{{ saved_count }} saved opportunity</span>
+    </div>
+  </div>
+
+  <!-- Card 2: Applied -->
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-label">Active Applications</span>
+      <div class="stat-icon-wrapper stat-icon-applied">
+        <i class="fa-solid fa-paper-plane"></i>
+      </div>
+    </div>
+    <div class="stat-value">{{ applied_count + screening_count }}</div>
+    <div class="stat-subtext">
+      <span>{{ applied_count }} applied &bull; {{ screening_count }} in screening</span>
+    </div>
+  </div>
+
+  <!-- Card 3: Interviews -->
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-label">Interviews</span>
+      <div class="stat-icon-wrapper stat-icon-interview">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+    </div>
+    <div class="stat-value">{{ interview_count }}</div>
+    <div class="stat-subtext">
+      <span>Active technical rounds</span>
+    </div>
+  </div>
+
+  <!-- Card 4: Offers -->
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-label">Offers Received</span>
+      <div class="stat-icon-wrapper stat-icon-offer">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+    </div>
+    <div class="stat-value">{{ offer_count }}</div>
+    <div class="stat-subtext">
+      <span class="badge badge-offer">
+        <i class="fa-solid fa-check-circle"></i> {{ offer_rate }}% Offer Rate
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Secondary Metrics Strip -->
+<div class="metrics-strip">
+  <div class="metric-pill-card">
+    <div class="metric-pill-icon" style="background-color: var(--primary-light); color: var(--primary);">
+      <i class="fa-solid fa-bolt"></i>
+    </div>
+    <div class="metric-pill-content">
+      <h4>{{ apps_this_week }} Application{{ 's' if apps_this_week != 1 else '' }}</h4>
+      <span>Submitted this week</span>
+    </div>
+  </div>
+
+  <div class="metric-pill-card">
+    <div class="metric-pill-icon" style="background-color: var(--status-interview-bg); color: var(--status-interview-text);">
+      <i class="fa-solid fa-calendar-days"></i>
+    </div>
+    <div class="metric-pill-content">
+      <h4>{{ interviews_this_month }} Interview{{ 's' if interviews_this_month != 1 else '' }}</h4>
+      <span>Scheduled this month</span>
+    </div>
+  </div>
+
+  <div class="metric-pill-card">
+    <div class="metric-pill-icon" style="background-color: var(--status-screening-bg); color: var(--purple);">
+      <i class="fa-solid fa-chart-line"></i>
+    </div>
+    <div class="metric-pill-content">
+      <h4>{{ response_rate }}% Response Rate</h4>
+      <span>Progressed to screening/interview</span>
+    </div>
+  </div>
+</div>
+
+<!-- Main Dashboard Grid -->
+<div class="dashboard-grid">
+  <!-- Chart: Application Overview -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">
+          <i class="fa-solid fa-chart-pie"></i> Pipeline Breakdown
+        </h3>
+        <p class="card-subtitle">Distribution across hiring stages</p>
+      </div>
+      <a href="{{ url_for('pipeline') }}" class="btn btn-secondary btn-sm">
+        View Board <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+
+    <div class="chart-container-wrapper">
+      <canvas 
+        id="statusChart"
+        data-saved="{{ status_counts.Saved }}"
+        data-applied="{{ status_counts.Applied }}"
+        data-screening="{{ status_counts.Screening }}"
+        data-interview="{{ status_counts.Interview }}"
+        data-offer="{{ status_counts.Offer }}"
+        data-rejected="{{ status_counts.Rejected }}"
+        data-withdrawn="{{ status_counts.Withdrawn }}"
+      ></canvas>
+    </div>
+  </div>
+
+  <!-- Follow-ups Due & Upcoming Interviews -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    <!-- Section: Follow-ups Due -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">
+            <i class="fa-solid fa-bell" style="color: var(--warning);"></i> Follow-ups Due
+          </h3>
+          <p class="card-subtitle">Recruiter touchpoints and status follow-ups</p>
+        </div>
+        {% if follow_ups_due %}
+          <span class="badge badge-interview">{{ follow_ups_due|length }} Action Items</span>
+        {% endif %}
+      </div>
+
+      {% if follow_ups_due %}
+        <div class="followups-list">
+          {% for item in follow_ups_due %}
+            <div class="followup-item">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                {% if item.follow_up_date < today_date %}
+                  <span class="followup-badge-overdue">Overdue</span>
+                {% elif item.follow_up_date == today_date %}
+                  <span class="followup-badge-today">Today</span>
+                {% else %}
+                  <span class="followup-badge-upcoming">Upcoming</span>
+                {% endif %}
+                <div>
+                  <a href="{{ url_for('application_details', id=item.id) }}" style="font-weight: 600; color: var(--text-main);">
+                    {{ item.company_name }}
+                  </a>
+                  <div style="font-size: 0.775rem; color: var(--text-secondary);">
+                    {{ item.position }} &bull; Due: {{ item.follow_up_date|format_date }}
+                  </div>
+                </div>
+              </div>
+              <form action="{{ url_for('mark_follow_up_done', id=item.id) }}" method="POST">
+                <input type="hidden" name="return_to" value="dashboard">
+                <button type="submit" class="btn btn-secondary btn-sm" title="Mark follow-up done">
+                  <i class="fa-solid fa-check" style="color: var(--success);"></i> Done
+                </button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="padding: 12px 0; font-size: 0.875rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
+          <span>No pending follow-ups due today. You're all caught up!</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Section: Upcoming Interviews -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">
+            <i class="fa-solid fa-calendar-days"></i> Upcoming Interviews
+          </h3>
+          <p class="card-subtitle">Scheduled rounds & technical calls</p>
+        </div>
+        {% if upcoming_interviews %}
+          <span class="badge badge-interview">{{ upcoming_interviews|length }} Scheduled</span>
+        {% endif %}
+      </div>
+
+      {% if upcoming_interviews %}
+        <div class="interviews-list">
+          {% for app in upcoming_interviews %}
+            <div class="interview-item">
+              <div class="interview-item-left">
+                <div class="interview-date-badge">
+                  <span class="interview-date-day">{{ app.interview_date.strftime('%d') }}</span>
+                  <span class="interview-date-month">{{ app.interview_date.strftime('%b') }}</span>
+                </div>
+                <div class="interview-info">
+                  <h4>{{ app.company_name }}</h4>
+                  <p>{{ app.position }} {% if app.location %}&bull; {{ app.location }}{% endif %}</p>
+                </div>
+              </div>
+              <a href="{{ url_for('application_details', id=app.id) }}" class="btn btn-secondary btn-sm">
+                Details <i class="fa-solid fa-arrow-right"></i>
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding: 24px;">
+          <div class="empty-state-icon" style="width: 44px; height: 44px; font-size: 1.25rem;">
+            <i class="fa-solid fa-calendar-xmark"></i>
+          </div>
+          <div class="empty-state-title" style="font-size: 0.95rem;">No upcoming interviews</div>
+          <p class="empty-state-text" style="font-size: 0.825rem; margin-bottom: 10px;">
+            Keep applying to unlock recruiter calls and interviews!
+          </p>
+          <a href="{{ url_for('applications') }}" class="btn btn-secondary btn-sm">
+            View Applications
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Section: Recent Applications & Activity Feed -->
+<div class="dashboard-grid">
+  <!-- Section: Recent Applications -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">
+          <i class="fa-solid fa-clock-rotate-left"></i> Recent Applications
+        </h3>
+        <p class="card-subtitle">5 latest opportunities tracked</p>
+      </div>
+      <a href="{{ url_for('applications') }}" class="btn btn-secondary btn-sm">
+        View All <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+
+    {% if recent_applications %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Position</th>
+              <th>Status</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for app in recent_applications %}
+              <tr>
+                <td>
+                  <div class="company-cell">
+                    <div class="company-logo-placeholder">
+                      {{ app.company_name[:2].upper() }}
+                    </div>
+                    <div class="company-details">
+                      <a href="{{ url_for('application_details', id=app.id) }}" class="company-name-link">
+                        {{ app.company_name }}
+                      </a>
+                      {% if app.location %}
+                        <span class="company-subtext">{{ app.location }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div>{{ app.position }}</div>
+                  <span class="job-type-pill">{{ app.job_type }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-{{ app.status.lower() }}">
+                    <span class="badge-dot"></span>
+                    {{ app.status }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <div class="action-buttons" style="justify-content: flex-end;">
+                    <a href="{{ url_for('application_details', id=app.id) }}" class="btn btn-icon" title="View Details">
+                      <i class="fa-solid fa-eye"></i>
+                    </a>
+                    <a href="{{ url_for('edit_application', id=app.id) }}" class="btn btn-icon" title="Edit">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i class="fa-solid fa-inbox"></i>
+        </div>
+        <div class="empty-state-title">No applications yet</div>
+        <a href="{{ url_for('add_application') }}" class="btn btn-primary btn-sm">
+          + Add Application
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Section: Recent Activity -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">
+          <i class="fa-solid fa-wave-square" style="color: var(--primary);"></i> Recent Activity
+        </h3>
+        <p class="card-subtitle">Real-time status changes and updates</p>
+      </div>
+    </div>
+
+    {% if recent_activities %}
+      <div class="activity-feed">
+        {% for act in recent_activities %}
+          <div class="activity-feed-item">
+            <div class="activity-icon" style="background-color: var(--primary-light); color: var(--primary);">
+              {% if act.activity_type == 'created' %}
+                <i class="fa-solid fa-paper-plane"></i>
+              {% elif act.activity_type == 'status_change' %}
+                <i class="fa-solid fa-arrows-rotate"></i>
+              {% elif act.activity_type == 'interview_scheduled' %}
+                <i class="fa-solid fa-calendar-plus"></i>
+              {% elif act.activity_type == 'follow_up_done' %}
+                <i class="fa-solid fa-check-double"></i>
+              {% else %}
+                <i class="fa-solid fa-pen"></i>
+              {% endif %}
+            </div>
+            <div class="activity-content">
+              <div class="activity-desc">
+                <a href="{{ url_for('application_details', id=act.application_id) }}" style="color: var(--text-main); font-weight: 600;">
+                  {{ act.application.company_name }}
+                </a>: {{ act.description }}
+              </div>
+              <div class="activity-meta">
+                <i class="fa-regular fa-clock" style="margin-right: 3px;"></i>{{ act.created_at|time_ago }}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding: 24px;">
+        <div class="empty-state-icon" style="width: 44px; height: 44px; font-size: 1.25rem;">
+          <i class="fa-solid fa-list-timeline"></i>
+        </div>
+        <div class="empty-state-title" style="font-size: 0.95rem;">No activity recorded yet</div>
+        <p class="empty-state-text" style="font-size: 0.825rem;">
+          Track or update applications to see your timeline build automatically.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

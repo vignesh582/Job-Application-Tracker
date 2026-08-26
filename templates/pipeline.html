@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Application Pipeline{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-hero">
+  <div class="page-hero-text">
+    <h1>Application Pipeline</h1>
+    <p>Visual Kanban board tracking active opportunities across recruitment stages.</p>
+  </div>
+  <div class="page-hero-actions">
+    <a href="{{ url_for('applications') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-table-list"></i> Table View
+    </a>
+    <a href="{{ url_for('add_application') }}" class="btn btn-primary">
+      <i class="fa-solid fa-plus"></i> Add Application
+    </a>
+  </div>
+</div>
+
+<!-- Kanban Pipeline Board -->
+<div class="pipeline-board-wrapper">
+  <div class="pipeline-board">
+    
+    <!-- 1. Saved Column -->
+    <div class="pipeline-column">
+      <div class="pipeline-column-header">
+        <div class="pipeline-column-title" style="color: var(--status-saved-text);">
+          <i class="fa-regular fa-bookmark"></i> Saved
+        </div>
+        <span class="pipeline-count-pill">{{ pipeline.Saved|length }}</span>
+      </div>
+      <div class="pipeline-cards-container">
+        {% if pipeline.Saved %}
+          {% for app in pipeline.Saved %}
+            {% include 'partials/pipeline_card.html' %}
+          {% endfor %}
+        {% else %}
+          <div class="empty-state" style="padding: 24px 10px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">No saved jobs</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 2. Applied Column -->
+    <div class="pipeline-column">
+      <div class="pipeline-column-header">
+        <div class="pipeline-column-title" style="color: var(--primary);">
+          <i class="fa-solid fa-paper-plane"></i> Applied
+        </div>
+        <span class="pipeline-count-pill">{{ pipeline.Applied|length }}</span>
+      </div>
+      <div class="pipeline-cards-container">
+        {% if pipeline.Applied %}
+          {% for app in pipeline.Applied %}
+            {% include 'partials/pipeline_card.html' %}
+          {% endfor %}
+        {% else %}
+          <div class="empty-state" style="padding: 24px 10px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">No applications in review</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 3. Screening Column -->
+    <div class="pipeline-column">
+      <div class="pipeline-column-header">
+        <div class="pipeline-column-title" style="color: var(--purple);">
+          <i class="fa-solid fa-headset"></i> Screening
+        </div>
+        <span class="pipeline-count-pill">{{ pipeline.Screening|length }}</span>
+      </div>
+      <div class="pipeline-cards-container">
+        {% if pipeline.Screening %}
+          {% for app in pipeline.Screening %}
+            {% include 'partials/pipeline_card.html' %}
+          {% endfor %}
+        {% else %}
+          <div class="empty-state" style="padding: 24px 10px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">No active screenings</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 4. Interview Column -->
+    <div class="pipeline-column">
+      <div class="pipeline-column-header">
+        <div class="pipeline-column-title" style="color: var(--warning);">
+          <i class="fa-solid fa-calendar-check"></i> Interview
+        </div>
+        <span class="pipeline-count-pill">{{ pipeline.Interview|length }}</span>
+      </div>
+      <div class="pipeline-cards-container">
+        {% if pipeline.Interview %}
+          {% for app in pipeline.Interview %}
+            {% include 'partials/pipeline_card.html' %}
+          {% endfor %}
+        {% else %}
+          <div class="empty-state" style="padding: 24px 10px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">No interviews scheduled</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 5. Offer Column -->
+    <div class="pipeline-column">
+      <div class="pipeline-column-header">
+        <div class="pipeline-column-title" style="color: var(--success);">
+          <i class="fa-solid fa-trophy"></i> Offer
+        </div>
+        <span class="pipeline-count-pill">{{ pipeline.Offer|length }}</span>
+      </div>
+      <div class="pipeline-cards-container">
+        {% if pipeline.Offer %}
+          {% for app in pipeline.Offer %}
+            {% include 'partials/pipeline_card.html' %}
+          {% endfor %}
+        {% else %}
+          <div class="empty-state" style="padding: 24px 10px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">No offers yet</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Completed / Archived Section (Rejected & Withdrawn) -->
+<div class="card" style="margin-top: 28px;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">
+        <i class="fa-solid fa-box-archive" style="color: var(--text-secondary);"></i> Concluded Applications
+      </h3>
+      <p class="card-subtitle">Archived decisions (Rejected &bull; Withdrawn)</p>
+    </div>
+    <span class="badge badge-withdrawn">{{ pipeline.Rejected|length + pipeline.Withdrawn|length }} Archived</span>
+  </div>
+
+  {% if pipeline.Rejected or pipeline.Withdrawn %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+      {% for app in pipeline.Rejected %}
+        {% include 'partials/pipeline_card.html' %}
+      {% endfor %}
+      {% for app in pipeline.Withdrawn %}
+        {% include 'partials/pipeline_card.html' %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="padding: 12px 0; font-size: 0.85rem; color: var(--text-secondary);">
+      No archived or rejected opportunities.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

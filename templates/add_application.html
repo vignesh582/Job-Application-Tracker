@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Add Application{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="page-hero-text">
+    <h1>Add Job Application</h1>
+    <p>Keep track of a new opportunity and stay on top of recruitment stages.</p>
+  </div>
+  <div class="page-hero-actions">
+    <a href="{{ url_for('applications') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-arrow-left"></i> Back to Applications
+    </a>
+  </div>
+</div>
+
+<div class="card form-card">
+  <form action="{{ url_for('add_application') }}" method="POST" id="addAppForm" novalidate>
+    <div class="form-grid">
+      <!-- 1. Company Name -->
+      <div class="form-group">
+        <label for="company_name" class="form-label">
+          Company Name <span class="required">*</span>
+        </label>
+        <input 
+          type="text" 
+          id="company_name" 
+          name="company_name" 
+          class="form-control" 
+          placeholder="e.g. Google, Zoho, Freshworks, TCS" 
+          value="{{ form_data.get('company_name', '') }}" 
+          required
+        >
+        <span class="form-hint">Enter the hiring company name.</span>
+      </div>
+
+      <!-- 2. Position -->
+      <div class="form-group">
+        <label for="position" class="form-label">
+          Position / Role <span class="required">*</span>
+        </label>
+        <input 
+          type="text" 
+          id="position" 
+          name="position" 
+          class="form-control" 
+          placeholder="e.g. Software Engineer, Backend Developer" 
+          value="{{ form_data.get('position', '') }}" 
+          required
+        >
+        <span class="form-hint">Job title or role applied for.</span>
+      </div>
+
+      <!-- 3. Location -->
+      <div class="form-group">
+        <label for="location" class="form-label">Location</label>
+        <input 
+          type="text" 
+          id="location" 
+          name="location" 
+          class="form-control" 
+          placeholder="e.g. Chennai, Bangalore, Remote" 
+          value="{{ form_data.get('location', '') }}"
+        >
+        <span class="form-hint">City, region, or Remote.</span>
+      </div>
+
+      <!-- 4. Job Type -->
+      <div class="form-group">
+        <label for="job_type" class="form-label">Job Type</label>
+        <select id="job_type" name="job_type" class="form-control">
+          {% for jtype in valid_job_types %}
+            <option value="{{ jtype }}" {% if form_data.get('job_type', 'Full-time') == jtype %}selected{% endif %}>
+              {{ jtype }}
+            </option>
+          {% endfor %}
+        </select>
+        <span class="form-hint">Employment structure.</span>
+      </div>
+
+      <!-- 5. Application Date -->
+      <div class="form-group">
+        <label for="application_date" class="form-label">
+          Application Date <span class="required">*</span>
+        </label>
+        <input 
+          type="date" 
+          id="application_date" 
+          name="application_date" 
+          class="form-control" 
+          value="{{ form_data.get('application_date', today_str) }}" 
+          required
+        >
+        <span class="form-hint">Date when you submitted your application.</span>
+      </div>
+
+      <!-- 6. Status -->
+      <div class="form-group">
+        <label for="status" class="form-label">Application Status</label>
+        <select id="status" name="status" class="form-control">
+          {% for status in valid_statuses %}
+            <option value="{{ status }}" {% if form_data.get('status', 'Applied') == status %}selected{% endif %}>
+              {{ status }}
+            </option>
+          {% endfor %}
+        </select>
+        <span class="form-hint">Current pipeline stage.</span>
+      </div>
+
+      <!-- 7. Job URL -->
+      <div class="form-group form-group-full">
+        <label for="job_url" class="form-label">Job Posting URL</label>
+        <input 
+          type="url" 
+          id="job_url" 
+          name="job_url" 
+          class="form-control" 
+          placeholder="https://careers.company.com/job/12345" 
+          value="{{ form_data.get('job_url', '') }}"
+        >
+        <span class="form-hint">Direct link to the job description or career portal listing.</span>
+      </div>
+
+      <!-- 8. Interview Date -->
+      <div class="form-group" id="interviewDateField">
+        <label for="interview_date" class="form-label">
+          Interview Date <span style="font-weight: normal; color: var(--text-muted);">(Optional)</span>
+        </label>
+        <input 
+          type="date" 
+          id="interview_date" 
+          name="interview_date" 
+          class="form-control" 
+          value="{{ form_data.get('interview_date', '') }}"
+        >
+        <span class="form-hint">Date of scheduled interview.</span>
+      </div>
+
+      <!-- 9. Follow-up Reminder Date -->
+      <div class="form-group">
+        <label for="follow_up_date" class="form-label">
+          Follow-up Date <span style="font-weight: normal; color: var(--text-muted);">(Optional)</span>
+        </label>
+        <input 
+          type="date" 
+          id="follow_up_date" 
+          name="follow_up_date" 
+          class="form-control" 
+          value="{{ form_data.get('follow_up_date', suggested_followup) }}"
+        >
+        <span class="form-hint">Reminder date to follow up with recruiter.</span>
+      </div>
+
+      <!-- 10. Notes -->
+      <div class="form-group form-group-full">
+        <label for="notes" class="form-label">Notes & Follow-ups</label>
+        <textarea 
+          id="notes" 
+          name="notes" 
+          rows="4" 
+          class="form-control" 
+          placeholder="Recruiter contact, interview rounds, salary expectations, referral names, tech stack discussed..."
+        >{{ form_data.get('notes', '') }}</textarea>
+        <span class="form-hint">Keep personal notes, interview preparation reminders, or recruiter feedback.</span>
+      </div>
+    </div>
+
+    <!-- Form Action Buttons -->
+    <div class="form-actions">
+      <a href="{{ url_for('applications') }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-check"></i> Save Application
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

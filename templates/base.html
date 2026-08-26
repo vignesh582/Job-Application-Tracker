@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobTrack – Job Application Tracker</title>
+
+  <!-- Prevent Theme Flickering -->
+  <script>
+    (function() {
+      try {
+        var theme = localStorage.getItem('jobtrack_theme');
+        if (theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="{{ url_for('dashboard') }}" class="logo-link">
+          <div class="logo-icon">
+            <i class="fa-solid fa-briefcase"></i>
+          </div>
+          <div class="logo-text">
+            <span class="logo-title">JobTrack</span>
+            <span class="logo-subtitle">Job Application Tracker</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <span class="nav-section-title">Main Menu</span>
+        
+        <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="{{ url_for('find_jobs') }}" class="nav-item {% if request.endpoint == 'find_jobs' %}active{% endif %}">
+          <i class="fa-solid fa-magnifying-glass-location"></i>
+          <span>Find Jobs</span>
+        </a>
+
+        <a href="{{ url_for('applications') }}" class="nav-item {% if request.endpoint == 'applications' %}active{% endif %}">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Applications</span>
+        </a>
+
+        <a href="{{ url_for('pipeline') }}" class="nav-item {% if request.endpoint == 'pipeline' %}active{% endif %}">
+          <i class="fa-solid fa-table-columns"></i>
+          <span>Pipeline</span>
+        </a>
+
+        <a href="{{ url_for('add_application') }}" class="nav-item {% if request.endpoint == 'add_application' %}active{% endif %}">
+          <i class="fa-solid fa-plus-circle"></i>
+          <span>Add Application</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="{{ url_for('settings') }}" class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}">
+          <i class="fa-solid fa-gear"></i>
+          <span>Settings</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="header-title-container">
+            <h2 class="header-page-title">{% block page_title %}Dashboard{% endblock %}</h2>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Quick Search -->
+          <form action="{{ url_for('applications') }}" method="GET" class="header-search-form">
+            <i class="fa-solid fa-magnifying-glass header-search-icon"></i>
+            <input 
+              type="text" 
+              name="q" 
+              class="header-search-input" 
+              placeholder="Search applications..." 
+              value="{{ request.args.get('q', '') }}"
+            >
+          </form>
+
+          <!-- Quick Theme Toggle Button -->
+          <button type="button" class="theme-toggle-btn js-theme-toggle" aria-label="Toggle Light/Dark Theme" title="Toggle Theme">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+
+          <!-- User Profile -->
+          <div class="user-profile-badge">
+            <div class="user-avatar">
+              {{ user_name[0] if user_name else 'V' }}
+            </div>
+            <span class="user-name">{{ user_name }}</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Toast Notification Container -->
+      <div class="toast-container" id="toastContainer">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="toast toast-{{ category if category != 'message' else 'info' }}">
+                <div class="toast-content">
+                  {% if category == 'success' %}
+                    <i class="fa-solid fa-circle-check toast-icon"></i>
+                  {% elif category == 'error' %}
+                    <i class="fa-solid fa-triangle-exclamation toast-icon"></i>
+                  {% else %}
+                    <i class="fa-solid fa-circle-info toast-icon"></i>
+                  {% endif %}
+                  <span>{{ message }}</span>
+                </div>
+                <button class="toast-close" aria-label="Close notification">&times;</button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- Main Body Content -->
+      <main class="content-body">
+        {% block content %}{% endblock %}
+      </main>
+
+      <!-- Footer -->
+      <footer class="app-footer">
+        <div>
+          <strong>JobTrack</strong> &mdash; <em>Track every application. Stay organized. Get hired.</em>
+        </div>
+        <div>
+          &copy; {{ current_year }} JobTrack. Built for career success.
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Global Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-icon-danger">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 class="modal-title" id="deleteModalTitle">Delete Application</h3>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete the job application for <strong id="deleteModalCompany">this position</strong>? This action cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">Cancel</button>
+        <form id="deleteConfirmForm" method="POST" action="">
+          <button type="submit" class="btn btn-danger-solid">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Scripts -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

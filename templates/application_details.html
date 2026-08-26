@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Application Details{% endblock %}
+
+{% block content %}
+<!-- Back link & Quick actions -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+  <a href="{{ url_for('applications') }}" class="btn btn-secondary btn-sm">
+    <i class="fa-solid fa-arrow-left"></i> Back to Applications
+  </a>
+
+  <!-- Quick Status Changer -->
+  <form action="{{ url_for('update_application_status', id=application.id) }}" method="POST" style="display: flex; align-items: center; gap: 8px;">
+    <input type="hidden" name="return_to" value="details">
+    <span style="font-size: 0.825rem; font-weight: 600; color: var(--text-secondary);">Stage:</span>
+    <select name="status" class="form-control" style="width: auto; padding: 6px 12px; font-size: 0.85rem;" onchange="this.form.submit()">
+      {% for st in valid_statuses %}
+        <option value="{{ st }}" {% if application.status == st %}selected{% endif %}>{{ st }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+<!-- Details Header Card -->
+<div class="details-header-card">
+  <div class="details-hero">
+    <div class="details-title-area">
+      <div class="details-logo-box">
+        {{ application.company_name[:2].upper() }}
+      </div>
+      <div>
+        <h1 class="details-company-name">{{ application.company_name }}</h1>
+        <div class="details-position">
+          {{ application.position }}
+          {% if application.location %}
+            <span style="color: var(--text-muted); font-size: 0.95rem; margin-left: 6px;">
+              &bull; <i class="fa-solid fa-location-dot" style="font-size: 0.85rem;"></i> {{ application.location }}
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions & Status -->
+    <div class="page-hero-actions">
+      <span class="badge badge-{{ application.status.lower() }}" style="font-size: 0.85rem; padding: 6px 14px;">
+        <span class="badge-dot" style="width: 8px; height: 8px;"></span>
+        {{ application.status }}
+      </span>
+
+      {% if application.job_url %}
+        <a href="{{ application.job_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Job Posting
+        </a>
+      {% endif %}
+
+      <a href="{{ url_for('edit_application', id=application.id) }}" class="btn btn-primary">
+        <i class="fa-solid fa-pen-to-square"></i> Edit
+      </a>
+
+      <button 
+        type="button" 
+        class="btn btn-danger js-delete-trigger" 
+        data-delete-url="{{ url_for('delete_application', id=application.id) }}"
+        data-company="{{ application.company_name }} ({{ application.position }})"
+      >
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Visual Progress Timeline Card -->
+<div class="card timeline-card">
+  <div class="card-header" style="margin-bottom: 8px;">
+    <div>
+      <h3 class="card-title">
+        <i class="fa-solid fa-bars-progress"></i> Hiring Pipeline Progress
+      </h3>
+      <p class="card-subtitle">Recruitment milestone progression</p>
+    </div>
+  </div>
+
+  <div class="progress-timeline">
+    {% if application.status == 'Rejected' %}
+      <!-- Rejected Flow -->
+      <div class="progress-track">
+        <div class="progress-fill" style="width: 100%; background-color: var(--danger);"></div>
+      </div>
+
+      <div class="timeline-step completed">
+        <div class="step-icon-node"><i class="fa-solid fa-paper-plane"></i></div>
+        <span class="step-label">Applied</span>
+        <span class="step-date">{{ application.application_date|format_date }}</span>
+      </div>
+
+      {% if application.interview_date %}
+        <div class="timeline-step completed">
+          <div class="step-icon-node"><i class="fa-solid fa-calendar-check"></i></div>
+          <span class="step-label">Interview</span>
+          <span class="step-date">{{ application.interview_date|format_date }}</span>
+        </div>
+      {% endif %}
+
+      <div class="timeline-step active step-rejected">
+        <div class="step-icon-node"><i class="fa-solid fa-xmark"></i></div>
+        <span class="step-label" style="color: var(--danger);">Rejected</span>
+        <span class="step-date">Decision received</span>
+      </div>
+
+    {% elif application.status == 'Withdrawn' %}
+      <!-- Withdrawn Flow -->
+      <div class="progress-track">
+        <div class="progress-fill" style="width: 100%; background-color: var(--text-secondary);"></div>
+      </div>
+
+      <div class="timeline-step completed">
+        <div class="step-icon-node"><i class="fa-solid fa-paper-plane"></i></div>
+        <span class="step-label">Applied</span>
+        <span class="step-date">{{ application.application_date|format_date }}</span>
+      </div>
+
+      <div class="timeline-step active">
+        <div class="step-icon-node" style="border-color: var(--text-secondary); background-color: var(--text-secondary);">
+          <i class="fa-solid fa-ban"></i>
+        </div>
+        <span class="step-label">Withdrawn</span>
+        <span class="step-date">Candidate choice</span>
+      </div>
+
+    {% elif application.status == 'Saved' %}
+      <!-- Saved Flow -->
+      <div class="progress-track">
+        <div class="progress-fill" style="width: 0%;"></div>
+      </div>
+
+      <div class="timeline-step active">
+        <div class="step-icon-node" style="border-color: var(--text-secondary); background-color: var(--text-secondary);">
+          <i class="fa-regular fa-bookmark"></i>
+        </div>
+        <span class="step-label">Saved</span>
+        <span class="step-date">Bookmarked</span>
+      </div>
+
+      <div class="timeline-step">
+        <div class="step-icon-node"><i class="fa-solid fa-paper-plane"></i></div>
+        <span class="step-label">Applied</span>
+        <span class="step-date">Upcoming</span>
+      </div>
+
+      <div class="timeline-step">
+        <div class="step-icon-node"><i class="fa-solid fa-trophy"></i></div>
+        <span class="step-label">Offer</span>
+        <span class="step-date">Final Outcome</span>
+      </div>
+
+    {% else %}
+      <!-- Standard 4-Step Flow: Applied -> Screening -> Interview -> Offer -->
+      {% set fill_pct = '0%' %}
+      {% if application.status == 'Applied' %}
+        {% set fill_pct = '0%' %}
+      {% elif application.status == 'Screening' %}
+        {% set fill_pct = '33%' %}
+      {% elif application.status == 'Interview' %}
+        {% set fill_pct = '66%' %}
+      {% elif application.status == 'Offer' %}
+        {% set fill_pct = '100%' %}
+      {% endif %}
+
+      <div class="progress-track">
+        <div class="progress-fill" style="width: {{ fill_pct }};"></div>
+      </div>
+
+      <!-- Step 1: Applied -->
+      <div class="timeline-step {% if application.status in ['Applied', 'Screening', 'Interview', 'Offer'] %}completed{% endif %} {% if application.status == 'Applied' %}active{% endif %}">
+        <div class="step-icon-node"><i class="fa-solid fa-paper-plane"></i></div>
+        <span class="step-label">Applied</span>
+        <span class="step-date">{{ application.application_date|format_date }}</span>
+      </div>
+
+      <!-- Step 2: Screening -->
+      <div class="timeline-step {% if application.status in ['Screening', 'Interview', 'Offer'] %}completed{% endif %} {% if application.status == 'Screening' %}active step-screening{% endif %}">
+        <div class="step-icon-node"><i class="fa-solid fa-headset"></i></div>
+        <span class="step-label">Screening</span>
+        <span class="step-date">{% if application.status in ['Screening', 'Interview', 'Offer'] %}Recruiter review{% else %}Pending{% endif %}</span>
+      </div>
+
+      <!-- Step 3: Interview -->
+      <div class="timeline-step {% if application.status in ['Interview', 'Offer'] %}completed{% endif %} {% if application.status == 'Interview' %}active{% endif %}">
+        <div class="step-icon-node"><i class="fa-solid fa-calendar-check"></i></div>
+        <span class="step-label">Interview</span>
+        <span class="step-date">
+          {% if application.interview_date %}
+            {{ application.interview_date|format_date }}
+          {% else %}
+            {% if application.status in ['Interview', 'Offer'] %}Completed{% else %}Scheduled{% endif %}
+          {% endif %}
+        </span>
+      </div>
+
+      <!-- Step 4: Offer -->
+      <div class="timeline-step {% if application.status == 'Offer' %}active step-offer completed{% endif %}">
+        <div class="step-icon-node"><i class="fa-solid fa-trophy"></i></div>
+        <span class="step-label" {% if application.status == 'Offer' %}style="color: var(--success);"{% endif %}>Offer</span>
+        <span class="step-date">
+          {% if application.status == 'Offer' %}Offer Received! 🎉{% else %}Final Outcome{% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Details & Notes Grid -->
+<div class="details-grid">
+  <!-- Left: Opportunity Breakdown -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">
+        <i class="fa-solid fa-circle-info"></i> Application Details
+      </h3>
+    </div>
+
+    <div>
+      <div class="info-item">
+        <span class="info-item-label">Company</span>
+        <span class="info-item-value">{{ application.company_name }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-item-label">Position</span>
+        <span class="info-item-value">{{ application.position }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-item-label">Job Type</span>
+        <span class="info-item-value">
+          <span class="job-type-pill">{{ application.job_type }}</span>
+        </span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-item-label">Location</span>
+        <span class="info-item-value">{{ application.location or 'Not specified / Remote' }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-item-label">Application Date</span>
+        <span class="info-item-value">{{ application.application_date|format_date }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-item-label">Interview Date</span>
+        <span class="info-item-value">
+          {% if application.interview_date %}
+            <strong style="color: var(--primary);">
+              <i class="fa-solid fa-calendar-check" style="margin-right: 4px;"></i>{{ application.interview_date|format_date }}
+            </strong>
+          {% else %}
+            <span style="color: var(--text-muted);">None scheduled</span>
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-item-label">Follow-up Reminder</span>
+        <span class="info-item-value" style="display: flex; align-items: center; justify-content: space-between;">
+          {% if application.follow_up_date %}
+            <div>
+              <strong>{{ application.follow_up_date|format_date }}</strong>
+              {% if application.follow_up_completed %}
+                <span class="badge badge-offer" style="margin-left: 8px;">Completed</span>
+              {% else %}
+                {% if application.follow_up_date <= today_date %}
+                  <span class="followup-badge-today" style="margin-left: 8px;">Action Due</span>
+                {% else %}
+                  <span class="followup-badge-upcoming" style="margin-left: 8px;">Pending</span>
+                {% endif %}
+              {% endif %}
+            </div>
+            {% if not application.follow_up_completed %}
+              <form action="{{ url_for('mark_follow_up_done', id=application.id) }}" method="POST">
+                <input type="hidden" name="return_to" value="details">
+                <button type="submit" class="btn btn-secondary btn-sm">
+                  <i class="fa-solid fa-check" style="color: var(--success);"></i> Mark Done
+                </button>
+              </form>
+            {% endif %}
+          {% else %}
+            <span style="color: var(--text-muted);">No follow-up set</span>
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-item-label">Job Posting URL</span>
+        <span class="info-item-value">
+          {% if application.job_url %}
+            <a href="{{ application.job_url }}" target="_blank" rel="noopener noreferrer" style="word-break: break-all;">
+              {{ application.job_url }} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.8rem; margin-left: 4px;"></i>
+            </a>
+          {% else %}
+            <span style="color: var(--text-muted);">No URL provided</span>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    <!-- Personal Notes -->
+    <div style="margin-top: 24px;">
+      <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
+        <i class="fa-regular fa-note-sticky" style="color: var(--primary);"></i> Personal Notes
+      </h4>
+      {% if application.notes %}
+        <div class="notes-box">{{ application.notes }}</div>
+      {% else %}
+        <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">
+          No notes added. Click <a href="{{ url_for('edit_application', id=application.id) }}">Edit</a> to record interview feedback or salary discussions.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: Activity History Timeline -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">
+        <i class="fa-solid fa-timeline" style="color: var(--primary);"></i> Activity History
+      </h3>
+    </div>
+
+    {% if activities %}
+      <div class="activity-timeline">
+        {% for act in activities %}
+          <div class="activity-node">
+            <div class="activity-node-bullet">
+              {% if act.activity_type == 'created' %}
+                <i class="fa-solid fa-paper-plane"></i>
+              {% elif act.activity_type == 'status_change' %}
+                <i class="fa-solid fa-arrows-rotate"></i>
+              {% elif act.activity_type == 'interview_scheduled' %}
+                <i class="fa-solid fa-calendar"></i>
+              {% elif act.activity_type == 'follow_up_done' %}
+                <i class="fa-solid fa-check"></i>
+              {% else %}
+                <i class="fa-solid fa-pen"></i>
+              {% endif %}
+            </div>
+            <div class="activity-node-content">
+              <h5>{{ act.description }}</h5>
+              <p>{{ act.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding: 24px;">
+        <div class="empty-state-icon" style="width: 40px; height: 40px; font-size: 1rem;">
+          <i class="fa-regular fa-clock"></i>
+        </div>
+        <div class="empty-state-title" style="font-size: 0.9rem;">No recorded activity</div>
+      </div>
+    {% endif %}
+
+    <div style="margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+      <div>Created: {{ application.created_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+      <div>Last Updated: {{ application.updated_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

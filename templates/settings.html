@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="page-hero-text">
+    <h1>Settings & Preferences</h1>
+    <p>Manage application preferences, theme appearance, and database demo records.</p>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <!-- Appearance & Theme Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">
+        <i class="fa-solid fa-palette" style="color: var(--primary);"></i> Theme & Appearance
+      </h3>
+    </div>
+
+    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 18px;">
+      Choose between clean Light mode and high-contrast Dark mode. Your preference is automatically saved.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+      <label style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-main); cursor: pointer;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <i class="fa-solid fa-sun" style="font-size: 1.2rem; color: var(--warning);"></i>
+          <div>
+            <div style="font-weight: 600; color: var(--text-main);">Light Mode (Default)</div>
+            <div style="font-size: 0.775rem; color: var(--text-secondary);">Clean SaaS blue/white interface</div>
+          </div>
+        </div>
+        <input type="radio" name="themePreference" value="light">
+      </label>
+
+      <label style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-main); cursor: pointer;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <i class="fa-solid fa-moon" style="font-size: 1.2rem; color: var(--primary);"></i>
+          <div>
+            <div style="font-weight: 600; color: var(--text-main);">Dark Mode</div>
+            <div style="font-size: 0.775rem; color: var(--text-secondary);">Deep slate palette (#0F172A) for low-light environments</div>
+          </div>
+        </div>
+        <input type="radio" name="themePreference" value="dark">
+      </label>
+    </div>
+
+    <div class="info-item">
+      <span class="info-item-label">Application Version</span>
+      <span class="info-item-value">JobTrack v1.2.0 (Professional Edition)</span>
+    </div>
+    <div class="info-item">
+      <span class="info-item-label">Database Storage</span>
+      <span class="info-item-value">SQLite (database/jobtrack.db)</span>
+    </div>
+  </div>
+
+  <!-- Database & Demo Data Management -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">
+        <i class="fa-solid fa-database" style="color: var(--primary);"></i> Data Management
+      </h3>
+    </div>
+
+    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px;">
+      Current active applications in your tracker: <strong>{{ total_count }}</strong>.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <!-- Populate Sample Data Button -->
+      <form action="{{ url_for('seed_data_route') }}" method="POST">
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: flex-start;">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> Populate Verified Sample Records (TCS, Zoho, Freshworks...)
+        </button>
+      </form>
+
+      <!-- Clear All Applications Button -->
+      <form action="{{ url_for('clear_data_route') }}" method="POST" onsubmit="return confirm('Warning: This will clear all tracked applications and activities. Are you sure?');">
+        <button type="submit" class="btn btn-danger" style="width: 100%; justify-content: flex-start;">
+          <i class="fa-solid fa-trash-can"></i> Reset & Clear Applications
+        </button>
+      </form>
+    </div>
+
+    <div style="margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--border-color); font-size: 0.775rem; color: var(--text-muted);">
+      <i class="fa-solid fa-shield-halved" style="margin-right: 4px;"></i> All application data is stored locally in SQLite with full schema integrity.
+    </div>
+  </div>
+</div>
+{% endblock %}

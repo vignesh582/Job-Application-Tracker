@@ -1,0 +1,39 @@
+<div class="pipeline-card" onclick="window.location='{{ url_for('application_details', id=app.id) }}'">
+  <div class="pipeline-card-company">{{ app.company_name }}</div>
+  <div class="pipeline-card-position">{{ app.position }}</div>
+
+  <div class="pipeline-card-meta">
+    {% if app.location %}
+      <div><i class="fa-solid fa-location-dot" style="font-size: 0.75rem; margin-right: 4px;"></i>{{ app.location }}</div>
+    {% endif %}
+    <div><i class="fa-regular fa-clock" style="font-size: 0.75rem; margin-right: 4px;"></i>Applied {{ app.application_date|format_date }}</div>
+
+    {% if app.interview_date and app.status == 'Interview' %}
+      <div style="color: var(--status-interview-text); font-weight: 600;">
+        <i class="fa-solid fa-calendar" style="font-size: 0.75rem; margin-right: 4px;"></i>{{ app.interview_date|format_date }}
+      </div>
+    {% endif %}
+
+    {% if app.follow_up_date and not app.follow_up_completed %}
+      <div style="color: var(--warning); font-size: 0.75rem;">
+        <i class="fa-solid fa-bell" style="font-size: 0.75rem; margin-right: 4px;"></i>Follow-up: {{ app.follow_up_date|format_date }}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="pipeline-card-footer" onclick="event.stopPropagation();">
+    <span class="badge badge-{{ app.status.lower() }}">
+      <span class="badge-dot"></span> {{ app.status }}
+    </span>
+
+    <!-- Quick Status Mover -->
+    <form action="{{ url_for('update_application_status', id=app.id) }}" method="POST">
+      <input type="hidden" name="return_to" value="pipeline">
+      <select name="status" class="pipeline-move-select" onchange="this.form.submit()" title="Move to stage">
+        {% for st in valid_statuses %}
+          <option value="{{ st }}" {% if app.status == st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>

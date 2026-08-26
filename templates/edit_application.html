@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Edit Application{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="page-hero-text">
+    <h1>Edit Application</h1>
+    <p>Update opportunity status, interview schedules, follow-up dates, or notes for <strong>{{ application.company_name }}</strong>.</p>
+  </div>
+  <div class="page-hero-actions">
+    <a href="{{ url_for('application_details', id=application.id) }}" class="btn btn-secondary">
+      <i class="fa-solid fa-arrow-left"></i> View Details
+    </a>
+  </div>
+</div>
+
+<div class="card form-card">
+  <form action="{{ url_for('edit_application', id=application.id) }}" method="POST" id="editAppForm" novalidate>
+    <div class="form-grid">
+      <!-- 1. Company Name -->
+      <div class="form-group">
+        <label for="company_name" class="form-label">
+          Company Name <span class="required">*</span>
+        </label>
+        <input 
+          type="text" 
+          id="company_name" 
+          name="company_name" 
+          class="form-control" 
+          value="{{ form_data.get('company_name', application.company_name) if form_data else application.company_name }}" 
+          required
+        >
+        <span class="form-hint">Enter the hiring company name.</span>
+      </div>
+
+      <!-- 2. Position -->
+      <div class="form-group">
+        <label for="position" class="form-label">
+          Position / Role <span class="required">*</span>
+        </label>
+        <input 
+          type="text" 
+          id="position" 
+          name="position" 
+          class="form-control" 
+          value="{{ form_data.get('position', application.position) if form_data else application.position }}" 
+          required
+        >
+        <span class="form-hint">Job title or role applied for.</span>
+      </div>
+
+      <!-- 3. Location -->
+      <div class="form-group">
+        <label for="location" class="form-label">Location</label>
+        <input 
+          type="text" 
+          id="location" 
+          name="location" 
+          class="form-control" 
+          value="{{ form_data.get('location', application.location or '') if form_data else (application.location or '') }}"
+        >
+        <span class="form-hint">City, region, or Remote.</span>
+      </div>
+
+      <!-- 4. Job Type -->
+      <div class="form-group">
+        <label for="job_type" class="form-label">Job Type</label>
+        {% set current_job_type = form_data.get('job_type', application.job_type) if form_data else application.job_type %}
+        <select id="job_type" name="job_type" class="form-control">
+          {% for jtype in valid_job_types %}
+            <option value="{{ jtype }}" {% if current_job_type == jtype %}selected{% endif %}>
+              {{ jtype }}
+            </option>
+          {% endfor %}
+        </select>
+        <span class="form-hint">Employment structure.</span>
+      </div>
+
+      <!-- 5. Application Date -->
+      <div class="form-group">
+        <label for="application_date" class="form-label">
+          Application Date <span class="required">*</span>
+        </label>
+        {% set current_app_date = form_data.get('application_date', application.application_date.strftime('%Y-%m-%d')) if form_data else application.application_date.strftime('%Y-%m-%d') %}
+        <input 
+          type="date" 
+          id="application_date" 
+          name="application_date" 
+          class="form-control" 
+          value="{{ current_app_date }}" 
+          required
+        >
+        <span class="form-hint">Date application was submitted.</span>
+      </div>
+
+      <!-- 6. Status -->
+      <div class="form-group">
+        <label for="status" class="form-label">Application Status</label>
+        {% set current_status = form_data.get('status', application.status) if form_data else application.status %}
+        <select id="status" name="status" class="form-control">
+          {% for status in valid_statuses %}
+            <option value="{{ status }}" {% if current_status == status %}selected{% endif %}>
+              {{ status }}
+            </option>
+          {% endfor %}
+        </select>
+        <span class="form-hint">Update current stage.</span>
+      </div>
+
+      <!-- 7. Job URL -->
+      <div class="form-group form-group-full">
+        <label for="job_url" class="form-label">Job Posting URL</label>
+        <input 
+          type="url" 
+          id="job_url" 
+          name="job_url" 
+          class="form-control" 
+          value="{{ form_data.get('job_url', application.job_url or '') if form_data else (application.job_url or '') }}"
+        >
+        <span class="form-hint">URL link to the job description.</span>
+      </div>
+
+      <!-- 8. Interview Date -->
+      <div class="form-group" id="interviewDateField">
+        <label for="interview_date" class="form-label">
+          Interview Date <span style="font-weight: normal; color: var(--text-muted);">(Optional)</span>
+        </label>
+        {% set current_interview_date = form_data.get('interview_date', application.interview_date.strftime('%Y-%m-%d') if application.interview_date else '') if form_data else (application.interview_date.strftime('%Y-%m-%d') if application.interview_date else '') %}
+        <input 
+          type="date" 
+          id="interview_date" 
+          name="interview_date" 
+          class="form-control" 
+          value="{{ current_interview_date }}"
+        >
+        <span class="form-hint">Date of scheduled interview round.</span>
+      </div>
+
+      <!-- 9. Follow-up Date -->
+      <div class="form-group">
+        <label for="follow_up_date" class="form-label">
+          Follow-up Date <span style="font-weight: normal; color: var(--text-muted);">(Optional)</span>
+        </label>
+        {% set current_followup_date = form_data.get('follow_up_date', application.follow_up_date.strftime('%Y-%m-%d') if application.follow_up_date else '') if form_data else (application.follow_up_date.strftime('%Y-%m-%d') if application.follow_up_date else '') %}
+        <input 
+          type="date" 
+          id="follow_up_date" 
+          name="follow_up_date" 
+          class="form-control" 
+          value="{{ current_followup_date }}"
+        >
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+          <input 
+            type="checkbox" 
+            id="follow_up_completed" 
+            name="follow_up_completed" 
+            value="1" 
+            {% if (form_data.get('follow_up_completed') if form_data else application.follow_up_completed) %}checked{% endif %}
+          >
+          <label for="follow_up_completed" style="font-size: 0.775rem; color: var(--text-secondary); cursor: pointer;">
+            Mark follow-up as completed
+          </label>
+        </div>
+      </div>
+
+      <!-- 10. Notes -->
+      <div class="form-group form-group-full">
+        <label for="notes" class="form-label">Notes & Follow-ups</label>
+        <textarea 
+          id="notes" 
+          name="notes" 
+          rows="4" 
+          class="form-control"
+        >{{ form_data.get('notes', application.notes or '') if form_data else (application.notes or '') }}</textarea>
+        <span class="form-hint">Update personal notes and interview preparation details.</span>
+      </div>
+    </div>
+
+    <!-- Form Action Buttons -->
+    <div class="form-actions">
+      <a href="{{ url_for('application_details', id=application.id) }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

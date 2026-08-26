@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Applications{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-hero">
+  <div class="page-hero-text">
+    <h1>Job Applications</h1>
+    <p>Manage, filter, and track all your job search records.</p>
+  </div>
+  <div class="page-hero-actions">
+    <a href="{{ url_for('pipeline') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-table-columns"></i> Pipeline Board
+    </a>
+    <a href="{{ url_for('add_application') }}" class="btn btn-primary">
+      <i class="fa-solid fa-plus"></i> Add Application
+    </a>
+  </div>
+</div>
+
+<!-- Search and Filter Bar -->
+<div class="filter-card">
+  <form action="{{ url_for('applications') }}" method="GET" class="filter-form" id="applicationsFilterForm">
+    <!-- Search Query -->
+    <div class="search-input-group">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input 
+        type="text" 
+        name="q" 
+        id="searchInput" 
+        placeholder="Search company, position or location..." 
+        value="{{ search_query }}"
+      >
+    </div>
+
+    <!-- Status Filter -->
+    <select name="status" class="filter-select" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      {% for status in valid_statuses %}
+        <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>
+          {{ status }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <!-- Job Type Filter -->
+    <select name="job_type" class="filter-select" onchange="this.form.submit()">
+      <option value="">All Job Types</option>
+      {% for jtype in valid_job_types %}
+        <option value="{{ jtype }}" {% if selected_job_type == jtype %}selected{% endif %}>
+          {{ jtype }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <!-- Sort Order -->
+    <select name="sort" class="filter-select" onchange="this.form.submit()">
+      <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest First</option>
+      <option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+    </select>
+
+    <!-- Filter Action Buttons -->
+    <div class="filter-actions">
+      <button type="submit" class="btn btn-secondary">
+        <i class="fa-solid fa-filter"></i> Apply
+      </button>
+      {% if search_query or selected_status or selected_job_type or (selected_sort and selected_sort != 'newest') %}
+        <a href="{{ url_for('applications') }}" class="btn btn-secondary" title="Reset all filters">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Table Header Summary -->
+<div class="filter-summary">
+  <div>
+    <strong>{{ total_count }}</strong> application{{ 's' if total_count != 1 else '' }} found
+    {% if search_query %} matching "<em>{{ search_query }}</em>"{% endif %}
+  </div>
+</div>
+
+<!-- Applications Table Card -->
+<div class="card" style="padding: 0; overflow: hidden;">
+  {% if applications %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Position</th>
+            <th>Location</th>
+            <th>Job Type</th>
+            <th>Applied Date</th>
+            <th>Status</th>
+            <th>Follow-up</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for app in applications %}
+            <tr>
+              <td>
+                <div class="company-cell">
+                  <div class="company-logo-placeholder">
+                    {{ app.company_name[:2].upper() }}
+                  </div>
+                  <div>
+                    <a href="{{ url_for('application_details', id=app.id) }}" class="company-name-link">
+                      {{ app.company_name }}
+                    </a>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <strong style="color: var(--text-main);">{{ app.position }}</strong>
+              </td>
+              <td>
+                {% if app.location %}
+                  <span><i class="fa-solid fa-location-dot" style="color: var(--text-muted); font-size: 0.8rem; margin-right: 4px;"></i>{{ app.location }}</span>
+                {% else %}
+                  <span style="color: var(--text-muted);">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="job-type-pill">{{ app.job_type }}</span>
+              </td>
+              <td>{{ app.application_date|format_date }}</td>
+              <td>
+                <span class="badge badge-{{ app.status.lower() }}">
+                  <span class="badge-dot"></span>
+                  {{ app.status }}
+                </span>
+                {% if app.status == 'Interview' and app.interview_date %}
+                  <div style="font-size: 0.725rem; color: var(--status-interview-text); margin-top: 3px; font-weight: 500;">
+                    <i class="fa-regular fa-calendar" style="margin-right: 3px;"></i>{{ app.interview_date|format_date }}
+                  </div>
+                {% endif %}
+              </td>
+              <td>
+                {% if app.follow_up_date %}
+                  {% if app.follow_up_completed %}
+                    <span style="font-size: 0.775rem; color: var(--success);">
+                      <i class="fa-solid fa-check"></i> Done
+                    </span>
+                  {% else %}
+                    <span style="font-size: 0.775rem; color: var(--warning); font-weight: 500;">
+                      <i class="fa-regular fa-bell"></i> {{ app.follow_up_date|format_date }}
+                    </span>
+                  {% endif %}
+                {% else %}
+                  <span style="color: var(--text-muted);">—</span>
+                {% endif %}
+              </td>
+              <td style="text-align: right;">
+                <div class="action-buttons" style="justify-content: flex-end;">
+                  <a href="{{ url_for('application_details', id=app.id) }}" class="btn btn-icon" title="View Details">
+                    <i class="fa-solid fa-eye"></i>
+                  </a>
+                  <a href="{{ url_for('edit_application', id=app.id) }}" class="btn btn-icon" title="Edit Application">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </a>
+                  <button 
+                    type="button" 
+                    class="btn btn-icon btn-danger js-delete-trigger" 
+                    title="Delete Application"
+                    data-delete-url="{{ url_for('delete_application', id=app.id) }}"
+                    data-company="{{ app.company_name }} ({{ app.position }})"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {% if search_query or selected_status or selected_job_type %}
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <div class="empty-state-title">No applications found</div>
+        <p class="empty-state-text">
+          Try adjusting your search or filters.
+        </p>
+        <a href="{{ url_for('applications') }}" class="btn btn-secondary">
+          <i class="fa-solid fa-rotate-left"></i> Clear All Filters
+        </a>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i class="fa-solid fa-folder-plus"></i>
+        </div>
+        <div class="empty-state-title">No applications yet</div>
+        <p class="empty-state-text">
+          Start tracking your job search by adding your first application.
+        </p>
+        <a href="{{ url_for('add_application') }}" class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i> + Add Application
+        </a>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

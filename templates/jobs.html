@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Find Jobs{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-hero">
+  <div class="page-hero-text">
+    <h1>Find Job Opportunities</h1>
+    <p>Discover open tech roles, apply directly on official company career portals, and track them with one click.</p>
+  </div>
+  <div class="page-hero-actions">
+    <a href="{{ url_for('applications') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-list-check"></i> My Applications
+    </a>
+  </div>
+</div>
+
+<!-- Curated Listings Notice Banner -->
+<div class="demo-banner-alert">
+  <i class="fa-solid fa-circle-info" style="font-size: 1.25rem; color: var(--primary);"></i>
+  <div>
+    <strong>Curated Job Opportunities</strong> &mdash; These verified sample listings showcase JobTrack's workflow. Click <strong>Apply ↗</strong> to visit the company's official career portal, then click <strong>"I've Applied"</strong> to automatically log the opportunity to your tracker.
+  </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="filter-card">
+  <form action="{{ url_for('find_jobs') }}" method="GET" class="filter-form">
+    <!-- Keyword Search -->
+    <div class="search-input-group">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input 
+        type="text" 
+        name="q" 
+        placeholder="Job title, skills (e.g. Python, Java, React)..." 
+        value="{{ search_query }}"
+      >
+    </div>
+
+    <!-- Location Filter -->
+    <select name="location" class="filter-select" onchange="this.form.submit()">
+      <option value="">All Locations</option>
+      <option value="chennai" {% if selected_location == 'chennai' %}selected{% endif %}>Chennai</option>
+      <option value="bangalore" {% if selected_location == 'bangalore' %}selected{% endif %}>Bangalore</option>
+      <option value="hyderabad" {% if selected_location == 'hyderabad' %}selected{% endif %}>Hyderabad</option>
+      <option value="coimbatore" {% if selected_location == 'coimbatore' %}selected{% endif %}>Coimbatore</option>
+    </select>
+
+    <!-- Job Type Filter -->
+    <select name="job_type" class="filter-select" onchange="this.form.submit()">
+      <option value="">All Job Types</option>
+      {% for jtype in valid_job_types %}
+        <option value="{{ jtype }}" {% if selected_job_type == jtype %}selected{% endif %}>{{ jtype }}</option>
+      {% endfor %}
+    </select>
+
+    <div class="filter-actions">
+      <button type="submit" class="btn btn-secondary">
+        <i class="fa-solid fa-filter"></i> Filter
+      </button>
+      {% if search_query or selected_location or selected_job_type %}
+        <a href="{{ url_for('find_jobs') }}" class="btn btn-secondary">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Results Header -->
+<div class="filter-summary">
+  <div>
+    <strong>{{ total_jobs }}</strong> job opportunity{{ 's' if total_jobs != 1 else '' }} available
+  </div>
+</div>
+
+<!-- Jobs Grid -->
+{% if jobs %}
+  <div class="jobs-grid">
+    {% for job in jobs %}
+      <div class="job-card">
+        <div>
+          <div class="job-card-top">
+            <div class="job-company-badge">
+              <div class="job-company-logo">
+                {{ job.company_name[:2].upper() }}
+              </div>
+              <div>
+                <h3 class="job-title-h3">{{ job.position }}</h3>
+                <div class="job-company-sub">
+                  <strong>{{ job.company_name }}</strong> &bull; {{ job.department }}
+                </div>
+              </div>
+            </div>
+
+            {% if job.is_applied %}
+              <span class="badge badge-applied">
+                <i class="fa-solid fa-check"></i> Applied
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="job-meta-row">
+            <span><i class="fa-solid fa-location-dot" style="margin-right: 4px;"></i>{{ job.location }}</span>
+            <span class="job-type-pill">{{ job.job_type }}</span>
+            <span><i class="fa-solid fa-user-tie" style="margin-right: 4px;"></i>{{ job.experience_level }}</span>
+            <span class="job-salary-tag"><i class="fa-solid fa-coins" style="margin-right: 4px;"></i>{{ job.salary_range }}</span>
+          </div>
+
+          <p class="job-desc-text">{{ job.description }}</p>
+
+          <div class="job-skills-wrap">
+            {% for skill in job.skills %}
+              <span class="job-skill-chip">{{ skill }}</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="job-actions-row">
+          <span style="font-size: 0.775rem; color: var(--text-muted);">
+            <i class="fa-regular fa-clock" style="margin-right: 3px;"></i>Posted {{ job.posted_time }}
+          </span>
+
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <a href="{{ job.official_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" title="Apply on official company portal">
+              Apply <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
+
+            {% if job.is_applied %}
+              <a href="{{ url_for('application_details', id=job.existing_app_id) }}" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-eye"></i> View Application
+              </a>
+            {% else %}
+              <button 
+                type="button" 
+                class="btn btn-primary btn-sm js-apply-confirm-trigger"
+                data-company="{{ job.company_name }}"
+                data-position="{{ job.position }}"
+                data-location="{{ job.location }}"
+                data-job-type="{{ job.job_type }}"
+                data-url="{{ job.official_url }}"
+              >
+                <i class="fa-solid fa-check"></i> I've Applied
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <i class="fa-solid fa-magnifying-glass"></i>
+    </div>
+    <div class="empty-state-title">No matching jobs found</div>
+    <p class="empty-state-text">
+      Try modifying your keywords or location filter to explore other openings.
+    </p>
+    <a href="{{ url_for('find_jobs') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-rotate-left"></i> Clear Filters
+    </a>
+  </div>
+{% endif %}
+
+<!-- "I've Applied" Confirmation Modal -->
+<div class="modal-overlay" id="jobApplyModal" role="dialog" aria-modal="true" aria-labelledby="jobApplyModalTitle">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="modal-icon-primary">
+        <i class="fa-solid fa-clipboard-check"></i>
+      </div>
+      <h3 class="modal-title" id="jobApplyModalTitle">Confirm Job Application</h3>
+    </div>
+
+    <form action="{{ url_for('job_apply_confirm') }}" method="POST">
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+        <p style="font-size: 0.875rem; color: var(--text-secondary);">
+          Confirm details to track this application in your personal JobTrack dashboard:
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Company Name</label>
+          <input type="text" id="applyModalCompany" name="company_name" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Position / Role</label>
+          <input type="text" id="applyModalPosition" name="position" class="form-control" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input type="text" id="applyModalLocation" name="location" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Job Type</label>
+            <input type="text" id="applyModalJobType" name="job_type" class="form-control">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Application Date</label>
+            <input type="date" id="applyModalAppDate" name="application_date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Follow-up Date</label>
+            <input type="date" id="applyModalFollowup" name="follow_up_date" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Job Posting URL</label>
+          <input type="url" id="applyModalJobUrl" name="job_url" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Personal Notes (Optional)</label>
+          <textarea name="notes" rows="2" class="form-control" placeholder="Applied with resume v2, portfolio link included..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelJobApplyBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-check"></i> Add to Tracker
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
