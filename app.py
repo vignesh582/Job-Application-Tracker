@@ -1,6 +1,5 @@
 import os
 import re
-import sqlite3
 from datetime import datetime, date, timedelta, timezone
 from urllib.parse import urlparse
 
@@ -18,17 +17,43 @@ DB_DIR = os.path.join(BASE_DIR, 'database')
 os.makedirs(DB_DIR, exist_ok=True)
 DB_PATH = os.path.join(DB_DIR, 'jobtrack.db')
 
+def mask_db_url(url_str):
+    """Mask credentials in database URL for safe logging."""
+    if not url_str:
+        return "<none>"
+    try:
+        parsed = urlparse(url_str)
+        masked_netloc = parsed.netloc
+        if parsed.password:
+            masked_netloc = masked_netloc.replace(f":{parsed.password}@", ":***@")
+        return f"{parsed.scheme}://{masked_netloc}{parsed.path}"
+    except Exception:
+        return "<masked-db-url>"
+
+def get_database_uri():
+    """Resolve database URI: prioritize PostgreSQL from environment, fallback to SQLite."""
+    candidate_urls = [
+        os.getenv('DATABASE_URL'),
+        os.getenv('INTERNAL_DATABASE_URL'),
+        os.getenv('RENDER_DATABASE_URL'),
+        os.getenv('POSTGRES_URL'),
+        os.getenv('POSTGRESQL_URL'),
+        os.getenv('DATABASE_PRIVATE_URL'),
+        os.getenv('DB_URL')
+    ]
+    for raw_url in candidate_urls:
+        if raw_url and str(raw_url).strip():
+            cleaned_url = str(raw_url).strip().strip('"').strip("'")
+            if cleaned_url.startswith('postgres://'):
+                cleaned_url = cleaned_url.replace('postgres://', 'postgresql://', 1)
+            return cleaned_url
+
+    # Fallback to local SQLite database
+    return f'sqlite:///{DB_PATH}'
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'jobtrack-super-secret-production-key-2026')
-
-DATABASE_URL = os.getenv('DATABASE_URL')
-if DATABASE_URL:
-    if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
-
+app.config['SQLALCHEMY_DATABASE_URI'] = get_database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -304,12 +329,19 @@ def parse_date(date_str):
 @app.context_processor
 def inject_global_data():
     today = date.today()
+    try:
+        is_postgres = db.engine.url.drivername.startswith('postgresql')
+        db_storage_label = 'PostgreSQL (Render)' if is_postgres else 'SQLite (database/jobtrack.db)'
+    except Exception:
+        db_storage_label = 'SQLite (database/jobtrack.db)'
+
     return {
         'current_year': today.year,
         'today_date': today,
         'valid_statuses': VALID_STATUSES,
         'valid_job_types': VALID_JOB_TYPES,
-        'user_name': 'Vignesh'
+        'user_name': 'Vignesh',
+        'db_storage_label': db_storage_label
     }
 
 
@@ -1159,9 +1191,12 @@ def internal_server_error(e):
 # ==========================================
 
 with app.app_context():
-    ensure_schema()
-    if Application.query.count() == 0:
-        seed_sample_data_records()
+    try:
+        ensure_schema()
+        if Application.query.count() == 0:
+            seed_sample_data_records()
+    except Exception as init_err:
+        print(f"[JobTrack DB Init Notice] {init_err}")
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
