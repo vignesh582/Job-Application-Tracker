@@ -20,7 +20,15 @@ DB_PATH = os.path.join(DB_DIR, 'jobtrack.db')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'jobtrack-super-secret-production-key-2026')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{DB_PATH}')
+
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -362,13 +370,15 @@ def ensure_schema():
         inspector = inspect(db.engine)
         if 'applications' in inspector.get_table_names():
             existing_cols = [col['name'] for col in inspector.get_columns('applications')]
+            is_sqlite = db.engine.url.drivername.startswith('sqlite')
+            bool_default = '0' if is_sqlite else 'FALSE'
 
             with db.engine.connect() as conn:
                 if 'follow_up_date' not in existing_cols:
                     conn.execute(text("ALTER TABLE applications ADD COLUMN follow_up_date DATE"))
                     conn.commit()
                 if 'follow_up_completed' not in existing_cols:
-                    conn.execute(text("ALTER TABLE applications ADD COLUMN follow_up_completed BOOLEAN DEFAULT 0"))
+                    conn.execute(text(f"ALTER TABLE applications ADD COLUMN follow_up_completed BOOLEAN DEFAULT {bool_default}"))
                     conn.commit()
     except Exception as e:
         print(f"[Schema Check Info] Column check notice: {e}")
@@ -387,6 +397,20 @@ def ensure_schema():
             db.session.commit()
     except Exception:
         db.session.rollback()
+
+
+# ==========================================
+# HEALTH CHECK
+# ==========================================
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint to verify app and database connectivity."""
+    try:
+        db.session.execute(text('SELECT 1'))
+        return jsonify({'status': 'ok'}), 200
+    except Exception:
+        return jsonify({'status': 'error', 'message': 'Database connection unavailable'}), 503
 
 
 # ==========================================

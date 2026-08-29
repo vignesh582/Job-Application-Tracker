@@ -185,6 +185,12 @@ class JobTrackTestCase(unittest.TestCase):
         self.assertIn(b'Settings & Preferences', response.data)
         self.assertIn(b'Theme & Appearance', response.data)
 
+    def test_health_endpoint(self):
+        response = self.client.get('/health')
+        self.assertEqual(response.status_code, 200)
+        json_data = response.get_json()
+        self.assertEqual(json_data.get('status'), 'ok')
+
     def test_title_consistency(self):
         for route in ['/', '/jobs', '/applications', '/pipeline', '/applications/add', '/settings']:
             res = self.client.get(route)

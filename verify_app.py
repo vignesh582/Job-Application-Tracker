@@ -154,8 +154,16 @@ def run_verification():
         assert expected_title in html_content, f"Page title mismatched on route {route}"
     print("  [OK] All pages strictly use: <title>JobTrack – Job Application Tracker</title>")
 
+    # 11. Test Health Check Endpoint
+    print("\n[11] Testing /health Endpoint")
+    res_health = client.get('/health')
+    assert res_health.status_code == 200
+    health_json = res_health.get_json()
+    assert health_json.get('status') == 'ok'
+    print("  [OK] /health endpoint verified (status: ok, HTTP 200).")
+
     print("\n" + "=" * 60)
-    print("[SUCCESS] ALL 10 COMPREHENSIVE VERIFICATION STAGES PASSED!")
+    print("[SUCCESS] ALL 11 COMPREHENSIVE VERIFICATION STAGES PASSED!")
     print("=" * 60)
 
 if __name__ == '__main__':
